@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yadavmohit11835-sudo.github.io/yadavmohit-sudo/sitemap.xml
