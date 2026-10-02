@@ -6,7 +6,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { Message } from './models/Message.js';
+
+// Force Node.js DNS to use IPv4 first (fixes Render cloud IPv6 ENETUNREACH permanently)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
