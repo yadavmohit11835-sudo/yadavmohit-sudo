@@ -49,9 +49,10 @@ function saveLocalMessage(msg) {
 
 // Helper: Send Instant Email Notification via Nodemailer
 async function sendNotificationEmail({ name, email, subject, message }) {
-  const emailUser = process.env.EMAIL_USER;
-  const emailPass = process.env.EMAIL_PASS;
-  const notifyEmail = process.env.NOTIFY_EMAIL || emailUser || 'yadavmohit11835@gmail.com';
+  const emailUser = (process.env.EMAIL_USER || '').trim();
+  const rawPass = process.env.EMAIL_PASS || '';
+  const emailPass = rawPass.replace(/\s+/g, '').trim();
+  const notifyEmail = (process.env.NOTIFY_EMAIL || emailUser || 'yadavmohit11835@gmail.com').trim();
 
   if (!emailUser || !emailPass) {
     console.log('[EMAIL] Notice: EMAIL_USER or EMAIL_PASS not set in server/.env. Email alert skipped.');
@@ -60,7 +61,10 @@ async function sendNotificationEmail({ name, email, subject, message }) {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      family: 4, // Force IPv4 to fix Render cloud ENETUNREACH error
       auth: {
         user: emailUser,
         pass: emailPass
@@ -131,6 +135,52 @@ app.get('/', async (req, res) => {
     totalMessages: count,
     timestamp: new Date().toISOString()
   });
+});
+
+// Diagnostic route to test Gmail sending directly on Render
+app.get('/api/test-email', async (req, res) => {
+  const emailUser = (process.env.EMAIL_USER || '').trim();
+  const rawPass = process.env.EMAIL_PASS || '';
+  const emailPass = rawPass.replace(/\s+/g, '').trim();
+  const notifyEmail = (process.env.NOTIFY_EMAIL || emailUser || 'yadavmohit11835@gmail.com').trim();
+
+  if (!emailUser || !emailPass) {
+    return res.status(400).json({ error: 'EMAIL_USER or EMAIL_PASS not set' });
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      family: 4, // Force IPv4 to fix Render cloud ENETUNREACH error
+      auth: {
+        user: emailUser,
+        pass: emailPass
+      }
+    });
+
+    await transporter.verify();
+
+    const info = await transporter.sendMail({
+      from: `"Mohit Portfolio" <${emailUser}>`,
+      to: notifyEmail,
+      subject: '🧪 Direct Test Email from Render Cloud',
+      text: 'Mohit, this is a test to verify Gmail delivery from Render to your inbox!'
+    });
+
+    res.json({
+      success: true,
+      message: 'Test email successfully sent to ' + notifyEmail,
+      messageId: info.messageId
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      code: err.code
+    });
+  }
 });
 
 // Disallowed fake, disposable, and test email domains
