@@ -53,72 +53,65 @@ function saveLocalMessage(msg) {
   return msg;
 }
 
-// Helper: Send Instant Email Notification via Nodemailer
+// Helper: Send Instant Email Notification via Resend (HTTPS Port 443 - zero block on Render)
 async function sendNotificationEmail({ name, email, subject, message }) {
-  const emailUser = (process.env.EMAIL_USER || '').trim();
-  const rawPass = process.env.EMAIL_PASS || '';
-  const emailPass = rawPass.replace(/\s+/g, '').trim();
-  const notifyEmail = (process.env.NOTIFY_EMAIL || emailUser || 'yadavmohit11835@gmail.com').trim();
-
-  if (!emailUser || !emailPass) {
-    console.log('[EMAIL] Notice: EMAIL_USER or EMAIL_PASS not set in server/.env. Email alert skipped.');
-    return;
-  }
+  const resendApiKey = process.env.RESEND_API_KEY || 're_5Bno3AAv_EC1GazMYpreNQNaWc7zqevaF';
+  const notifyEmail = (process.env.NOTIFY_EMAIL || 'yadavmohit11835@gmail.com').trim();
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // Standard cloud port 587 (STARTTLS)
-      family: 4,
-      auth: {
-        user: emailUser,
-        pass: emailPass
-      }
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Mohit Portfolio <onboarding@resend.dev>',
+        to: [notifyEmail],
+        reply_to: email,
+        subject: `📬 [Portfolio Inquiry] ${subject} - from ${name}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+            <div style="border-bottom: 2px solid #06b6d4; padding-bottom: 12px; margin-bottom: 20px;">
+              <h2 style="color: #0f172a; margin: 0; font-size: 20px;">New Message from Portfolio Website!</h2>
+              <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Received on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; font-size: 13px; width: 110px;"><strong>Sender Name:</strong></td>
+                <td style="padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: bold;">${name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; font-size: 13px;"><strong>Sender Email:</strong></td>
+                <td style="padding: 8px 0; font-size: 14px;"><a href="mailto:${email}" style="color: #0284c7; text-decoration: none; font-weight: bold;">${email}</a></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; font-size: 13px;"><strong>Subject:</strong></td>
+                <td style="padding: 8px 0; color: #0f172a; font-size: 14px;">${subject}</td>
+              </tr>
+            </table>
+
+            <div style="background-color: #f8fafc; border-left: 4px solid #06b6d4; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+              <p style="color: #475569; font-size: 12px; text-transform: uppercase; margin: 0 0 8px 0; font-weight: bold;">Message Content:</p>
+              <p style="color: #1e293b; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
+            </div>
+
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center;">
+              <a href="mailto:${email}" style="display: inline-block; background-color: #0284c7; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Click to Reply to ${name}</a>
+              <p style="font-size: 11px; color: #94a3b8; margin: 12px 0 0 0;">Tip: You can also hit 'Reply' directly to this email in your inbox.</p>
+            </div>
+          </div>
+        `
+      })
     });
 
-    const mailOptions = {
-      from: `"Mohit Portfolio" <${emailUser}>`,
-      to: notifyEmail,
-      replyTo: email,
-      subject: `📬 [Portfolio Inquiry] ${subject} - from ${name}`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-          <div style="border-bottom: 2px solid #06b6d4; padding-bottom: 12px; margin-bottom: 20px;">
-            <h2 style="color: #0f172a; margin: 0; font-size: 20px;">New Message from Portfolio Website!</h2>
-            <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Received on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
-          </div>
-          
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-              <td style="padding: 8px 0; color: #64748b; font-size: 13px; width: 110px;"><strong>Sender Name:</strong></td>
-              <td style="padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: bold;">${name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #64748b; font-size: 13px;"><strong>Sender Email:</strong></td>
-              <td style="padding: 8px 0; font-size: 14px;"><a href="mailto:${email}" style="color: #0284c7; text-decoration: none; font-weight: bold;">${email}</a></td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #64748b; font-size: 13px;"><strong>Subject:</strong></td>
-              <td style="padding: 8px 0; color: #0f172a; font-size: 14px;">${subject}</td>
-            </tr>
-          </table>
-
-          <div style="background-color: #f8fafc; border-left: 4px solid #06b6d4; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
-            <p style="color: #475569; font-size: 12px; text-transform: uppercase; margin: 0 0 8px 0; font-weight: bold;">Message Content:</p>
-            <p style="color: #1e293b; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
-          </div>
-
-          <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center;">
-            <a href="mailto:${email}" style="display: inline-block; background-color: #0284c7; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px;">Click to Reply to ${name}</a>
-            <p style="font-size: 11px; color: #94a3b8; margin: 12px 0 0 0;">Tip: You can also hit 'Reply' directly to this email in your inbox.</p>
-          </div>
-        </div>
-      `
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL SUCCESS] Notification sent to ${notifyEmail} (ID: ${info.messageId})`);
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`[EMAIL SUCCESS] Notification sent to ${notifyEmail} via Resend HTTPS (ID: ${data.id})`);
+    } else {
+      console.error('[EMAIL ERROR] Resend returned error:', data);
+    }
   } catch (err) {
     console.error('[EMAIL ERROR] Failed to send email alert:', err.message);
   }
@@ -143,48 +136,43 @@ app.get('/', async (req, res) => {
   });
 });
 
-// Diagnostic route to test Gmail sending directly on Render
+// Diagnostic route to test email sending via Resend HTTPS on Render
 app.get('/api/test-email', async (req, res) => {
-  const emailUser = (process.env.EMAIL_USER || '').trim();
-  const rawPass = process.env.EMAIL_PASS || '';
-  const emailPass = rawPass.replace(/\s+/g, '').trim();
-  const notifyEmail = (process.env.NOTIFY_EMAIL || emailUser || 'yadavmohit11835@gmail.com').trim();
-
-  if (!emailUser || !emailPass) {
-    return res.status(400).json({ error: 'EMAIL_USER or EMAIL_PASS not set' });
-  }
+  const resendApiKey = process.env.RESEND_API_KEY || 're_5Bno3AAv_EC1GazMYpreNQNaWc7zqevaF';
+  const notifyEmail = (process.env.NOTIFY_EMAIL || 'yadavmohit11835@gmail.com').trim();
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // Standard cloud port 587
-      family: 4,
-      auth: {
-        user: emailUser,
-        pass: emailPass
-      }
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Mohit Portfolio <onboarding@resend.dev>',
+        to: [notifyEmail],
+        subject: '🧪 Direct Test Email from Render via Resend HTTPS',
+        text: 'Mohit Bhai, congratulations! Your email alert via Resend HTTPS is officially live from Render!'
+      })
     });
 
-    await transporter.verify();
-
-    const info = await transporter.sendMail({
-      from: `"Mohit Portfolio" <${emailUser}>`,
-      to: notifyEmail,
-      subject: '🧪 Direct Test Email from Render Cloud',
-      text: 'Mohit, this is a test to verify Gmail delivery from Render to your inbox!'
-    });
-
-    res.json({
-      success: true,
-      message: 'Test email successfully sent to ' + notifyEmail,
-      messageId: info.messageId
-    });
+    const data = await response.json();
+    if (response.ok) {
+      res.json({
+        success: true,
+        message: 'Email successfully sent via Resend HTTPS to ' + notifyEmail,
+        id: data.id
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: data
+      });
+    }
   } catch (err) {
     res.status(500).json({
       success: false,
-      error: err.message,
-      code: err.code
+      error: err.message
     });
   }
 });
