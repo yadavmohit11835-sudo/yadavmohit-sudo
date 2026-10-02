@@ -62,9 +62,9 @@ async function sendNotificationEmail({ name, email, subject, message }) {
   try {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      family: 4, // Force IPv4 to fix Render cloud ENETUNREACH error
+      port: 587,
+      secure: false, // Standard cloud port 587 (STARTTLS)
+      family: 4,
       auth: {
         user: emailUser,
         pass: emailPass
@@ -151,9 +151,9 @@ app.get('/api/test-email', async (req, res) => {
   try {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      family: 4, // Force IPv4 to fix Render cloud ENETUNREACH error
+      port: 587,
+      secure: false, // Standard cloud port 587
+      family: 4,
       auth: {
         user: emailUser,
         pass: emailPass
